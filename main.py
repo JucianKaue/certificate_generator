@@ -1,5 +1,5 @@
 import datetime
-import imghdr
+from time import sleep
 
 import openpyxl
 
@@ -8,9 +8,6 @@ from reportlab.lib.pagesizes import A4
 import os
 
 import glob
-
-import win32com.client as win32
-
 
 pastaApp = os.path.dirname(__file__)
 
@@ -126,36 +123,30 @@ class Table:
             list_emails = []
             emails = table.get_fields({"Email": "Qual é o seu e-mail?"})
             for email in emails:
-                list_emails.append(email['Qual é o seu e-mail?'])
+                list_emails.append(email['Qual é o seu e-mail?'].strip().lower())
             list_all_attendences.append(list_emails)
 
         attendences = 0
         for i in range(0, len(list_all_attendences)):
-            if student['e-mail'] in list_all_attendences[i]:
+            if student['e-mail'].strip().lower() in list_all_attendences[i]:
                 attendences += 1
 
         percent = int((attendences*100)/len(list_all_attendences))
         return student['e-mail'], percent
 
 
-def send_email():
+def send_email(mail_from, mail_to):
     import smtplib
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-    from email.mime.image import MIMEImage
-    from email.mime.application import MIMEApplication
     from email.message import EmailMessage
 
     smtp_ssl_host = 'smtp.gmail.com'
     smtp_ssl_port = 465
 
-    username = 'ademirdecezare@gmail.com'
-    password = 'rbbgyvhgbljcfafh'
+    username = mail_from[0]
+    password = mail_from[1]
 
-    mail_from = 'ademirdecezare@gmail.com'
-    mail_to = ['jucian_decezare2015@hotmail.com']
-
-    mail = MIMEMultipart()
+    mail_from = mail_from[0]
+    mail_to = [mail_to]
 
     message = EmailMessage()
     message['Subject'] = "Certificado de Conclusão de Curso"
@@ -165,28 +156,15 @@ def send_email():
 
     file = open('certificado.pdf', 'rb')
     file_data = file.read()
-    file_type = imghdr.what(file.name)
     file_name = file.name
 
-    message.add_attachment(file_data, maintype='pdf', subtype=file_type, filename=file_name)
+    message.add_attachment(file_data, maintype='pdf', subtype="pdf", filename=file_name)
 
     server = smtplib.SMTP_SSL(smtp_ssl_host, smtp_ssl_port)
     server.login(username, password)
     server.send_message(message)
     server.quit()
 
-
-    """
-    outlook = win32.Dispatch('outlook.application')
-
-    email = outlook.CreateItem(0)
-    email.To = "ademirdecezare@gmail.com"
-    email.Subject = "TESTE"
-    email.HTMLBody = "Esse é apenas um teste"
-
-    certificate = "certificates/certificado-Cristian Solutchak.pdf"
-    email.Attachments.Add(certificate)
-    """
 
 course = Course(
     name="Ensinando Arduino, Ciclo de Aulas On-Line de Eletrônica",
@@ -199,7 +177,7 @@ course = Course(
               'Semáforo interativo, projeto de semáforo com pedestres',
               'Servo motor, controlando o servo motor']
 )
-"""
+
 # Abre a tabela de inscrição e salva o nome e o e-mail dos participantes.
 table_subscription = Table(arquive_name="input\subscribed.xlsx", table_name="subscribed")
 list_students = table_subscription.get_fields(fields_name={"Email": "Email Address",
@@ -216,6 +194,7 @@ for i in glob.glob("*input\presence\*"):
 
 generate_amount = 0
 not_generate_amount = 0
+students_passed = []
 
 pastaApp = os.path.dirname(__file__)
 for student in list_students:
@@ -230,15 +209,22 @@ for student in list_students:
         certification.generate_certification()
         canva.save()
         # Mostra uma mensagem falando que deu tudo certo
-        print(f"\033[1;32mO certificado de {student['First Name'].upper()} {student['Last Name'].upper()} foi gerado corretamente")
+        print(f"\033[1;32mO certificado de {student['First Name'].upper()} {student['Last Name'].upper()} foi gerado corretamente\033[0m\n"
+              f"Presença: {percentage_presence[1]}")
         generate_amount += 1
     else:
         # Mostra uma mensagem avisando que o aluno não obteve frequências suficientes
         print(
-            f"\033[1;31mO aluno(a) {student['First Name'].upper()} {student['Last Name'].upper()} não atingiu frequência suficiente")
+            f"\033[1;31mO aluno(a) {student['First Name'].upper()} {student['Last Name'].upper()} não atingiu frequência suficiente\033[0m\n"
+            f"Presença: {percentage_presence[1]}")
+        students_passed.append(f"{student['First Name'].title()} {student['Last Name'].title()}")
         not_generate_amount += 1
-print(generate_amount)
-print(not_generate_amount)
-"""
-send_email()
+    sleep(0.5)
+print(f"Gerados: {generate_amount}")
+print(f"Não gerados: {not_generate_amount}")
 
+for s in students_passed:
+    print(s)
+
+
+send_email(mail_from=['', ''], mail_to='jucian_decezare2015@hotmail.com')
