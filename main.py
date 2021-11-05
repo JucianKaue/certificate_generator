@@ -1,5 +1,4 @@
 import datetime
-from time import sleep
 
 import openpyxl
 
@@ -12,6 +11,7 @@ import glob
 pastaApp = os.path.dirname(__file__)
 
 
+# Organiza as informações sobre o curso.
 class Course:
     def __init__(self, name, date, workload, contents):
         date = [date['start'].split('/'), date['end'].split('/')]
@@ -22,31 +22,35 @@ class Course:
         self.contents = contents
 
 
-class Certification:
-    def __init__(self, person, course):
-
-        self.person = person
+# Organiza as informações e métodos relacionados ao certificado
+class Certificate:
+    # Salva as informações importantes para o certificado, sendo elas,  aluno, curso, data e o texto.
+    def __init__(self, student, course):
+        self.student = student
         self.course = course
         self.date = datetime.datetime.today()
-        self.text_ = f"Certificamos que {self.person} participou com êxito do evento {self.course.name_},  " \
-                     f"realizado de {Certification.convert_date(self.course.date_[0])} a " \
-                     f"{Certification.convert_date(self.course.date_[1])} de forma virtual, " \
+        self.text_ = f"Certificamos que {self.student} participou com êxito do evento {self.course.name_},  " \
+                     f"realizado de {Certificate.convert_date(self.course.date_[0])} a " \
+                     f"{Certificate.convert_date(self.course.date_[1])} de forma virtual, " \
                      f"contabilizando carga horária total de {self.course.workload_} horas."
 
+    # Método responsável por criar o certificado.
     def generate_certification(self):
-        Certification.draw_text('CERTIFICADO', size=50, position=[600/2, 750], color='#13C3AF')
+        Certificate.draw_text('CERTIFICADO', size=50, position=[600 / 2, 750], color='#13C3AF')     # Define o título
 
-        text = Certification.split_text(self.text_, 40)
-        pos_Y = 690
+        text = Certificate.split_text(self.text_, 40)   # Chama a função split_text (linha 65)
+        pos_Y = 690                                     # Define  a posição inicial horizontal da primeira linha
+
+        # Escreve o texto
         for i in range(len(text)):
-            Certification.draw_text(text[i], position=[600/2, pos_Y], size=15)
+            Certificate.draw_text(text[i], position=[600 / 2, pos_Y], size=15)
             pos_Y -= 20
 
-        pos_Y -= 40
-        Certification.draw_text('COMPOSIÇÃO DO CURSO', size=20, position=[600 / 2, pos_Y])
+        pos_Y -= 45
+        Certificate.draw_text('COMPOSIÇÃO DO CURSO', size=20, position=[600 / 2, pos_Y])
         pos_Y -= 30
         for i in range(len(self.course.contents)):
-            Certification.draw_text(self.course.contents[i], position=[600/2, pos_Y], size=13)
+            Certificate.draw_text(self.course.contents[i], position=[600 / 2, pos_Y], size=13)
             pos_Y -= 20
 
         pos_Y -= 185
@@ -57,9 +61,10 @@ class Certification:
         canva.drawImage('images/rafa.png', 400, pos_Y, 150, 80)
         canva.drawImage('images/IFC.png', 240, pos_Y-20, 120, 120)
 
-        Certification.draw_text(Certification.convert_date(self.date), position=[600 / 2, 20], size=10)
+        Certificate.draw_text(Certificate.convert_date(self.date), position=[600 / 2, 20], size=10)
 
     @staticmethod
+    # Recebe uma string, divide ela a cada determinado numero de caracteres e retorna uma lista com as strings resultantes.
     def split_text(text, caracters_per_line):
         words = text.split()
 
@@ -79,23 +84,27 @@ class Certification:
         return text
 
     @staticmethod
+    # Responsável por converter datas do formato datetime para a data escrita por extenso.
     def convert_date(date):
         months = [ 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
         return f"{date.day} de {months[(date.month-1)]} de {date.year}"
 
     @staticmethod
+    # Responsável por escrever os textos no certificado.
     def draw_text(text, position, size, color='black'):
         canva.setFont("Helvetica", size)
         canva.setFillColor(color)
         canva.drawCentredString(position[0], position[1], text)
 
 
+# Responsável por organizar e coletar os dados das tabelas.
 class Table:
     def __init__(self, arquive_name, table_name=''):
         self.arquive_ = openpyxl.load_workbook(filename=f"{arquive_name}", read_only=True)
         if table_name != '':
             self.table = self.arquive_[table_name]
 
+    # Recebe os titulos das colunas e retorna uma lista contendo dicionários que representam as linhas da tabela
     def get_fields(self, fields_name):
         lines_list = []
         indexes = {}
@@ -117,6 +126,7 @@ class Table:
         return lines_list
 
     @staticmethod
+    # Recebe o email do aluno e a lista de tabelas da chamada e retorna a porcentagem de presença
     def verify_presence(student, attendence_lists):
         list_all_attendences = []
         for table in attendence_lists:
@@ -134,8 +144,8 @@ class Table:
         percent = int((attendences*100)/len(list_all_attendences))
         return student['e-mail'], percent
 
-
-def send_email(mail_from, mail_to):
+# Função responsável por enviar o e-mail
+def send_email(mail_from, mail_to, certificate_name):
     import smtplib
     from email.message import EmailMessage
 
@@ -152,11 +162,13 @@ def send_email(mail_from, mail_to):
     message['Subject'] = "Certificado de Conclusão de Curso"
     message['From'] = mail_from
     message['To'] = mail_to
-    message.set_content("HELLO WORLD!!!")
+    message.set_content('Olá, gostariamos de lhe parabenizar pela conclusão do Curso '
+                        '"Ensinando Arduino, Ciclo de Aulas On-Line de Eletrônica".\n\n'
+                        'Segue em anexo o seu certificado de conclusão do curso')
 
-    file = open('certificado.pdf', 'rb')
+    file = open(f'certificates\{certificate_name}', 'rb')
     file_data = file.read()
-    file_name = file.name
+    file_name = certificate_name
 
     message.add_attachment(file_data, maintype='pdf', subtype="pdf", filename=file_name)
 
@@ -172,7 +184,7 @@ course = Course(
     workload="12",
     contents=['Apresentação do projeto',
               'Conhecendo o Arduino, noções de eletrônica e primeiro projeto',
-              'Semáforo, projeto de semáfora com Arduino',
+              'Semáforo, projeto de semáforo com Arduino',
               'Controle de luminosidade, regulando a tensão com o potenciômetro',
               'Semáforo interativo, projeto de semáforo com pedestres',
               'Servo motor, controlando o servo motor']
@@ -182,9 +194,9 @@ course = Course(
 table_subscription = Table(arquive_name="input\subscribed.xlsx", table_name="subscribed")
 list_students = table_subscription.get_fields(fields_name={"Email": "Email Address",
                                            "First Name": "First Name",
-                                           "Last Name": "Last Name",
-                                           "Phone": "Phone Number"})
+                                           "Last Name": "Last Name",})
 
+print(list_students)
 # Descobre o nome e abre as tabelas que estivarem dentro de "input\presence"
 list_tables_attendance = []
 for i in glob.glob("*input\presence\*"):
@@ -201,17 +213,25 @@ for student in list_students:
     # Descobre a porcentagem de presença
     percentage_presence = Table.verify_presence(student={'e-mail': f'{student["Email Address"]}'},
                                                 attendence_lists=list_tables_attendance)
-    # Se a porcentagem for maior ou igual a 70
+    # Se a porcentagem de presença for maior ou igual a 70
     if percentage_presence[1] >= 70:
         # Gera o certificado
         canva = canvas.Canvas(pastaApp + f"\\certificates\certificado-{student['First Name']} {student['Last Name']}.pdf", pagesize=A4)
-        certification = Certification(person=f"{student['First Name'].upper()} {student['Last Name'].upper()}", course=course)
+        certification = Certificate(student=f"{student['First Name'].upper()} {student['Last Name'].upper()}",
+                                    course=course)
         certification.generate_certification()
         canva.save()
         # Mostra uma mensagem falando que deu tudo certo
         print(f"\033[1;32mO certificado de {student['First Name'].upper()} {student['Last Name'].upper()} foi gerado corretamente\033[0m\n"
               f"Presença: {percentage_presence[1]}")
         generate_amount += 1
+        """ // ------- TO USE THE FUNCTION "send_email" IT'S NECESSARY TO CREATE AN APP PASSWORD ON GOOGLE ACCOUNT
+        print(student["Email Address"])
+        send_email(mail_from=['<--EMAIL ADDRESS-->', 'APP PASSWORD'],
+                   mail_to='<-- STUDENT EMAIL-->',
+                   certificate_name=f"certificado-{student['First Name']} {student['Last Name']}.pdf")
+        """
+
     else:
         # Mostra uma mensagem avisando que o aluno não obteve frequências suficientes
         print(
@@ -219,12 +239,8 @@ for student in list_students:
             f"Presença: {percentage_presence[1]}")
         students_passed.append(f"{student['First Name'].title()} {student['Last Name'].title()}")
         not_generate_amount += 1
-    sleep(0.5)
 print(f"Gerados: {generate_amount}")
 print(f"Não gerados: {not_generate_amount}")
 
 for s in students_passed:
     print(s)
-
-
-send_email(mail_from=['', ''], mail_to='jucian_decezare2015@hotmail.com')
