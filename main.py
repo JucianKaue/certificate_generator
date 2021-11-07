@@ -33,6 +33,10 @@ class Certificate:
                      f"realizado de {Certificate.convert_date(self.course.date_[0])} a " \
                      f"{Certificate.convert_date(self.course.date_[1])} de forma virtual, " \
                      f"contabilizando carga horária total de {self.course.workload_} horas."
+        self.text_authentication =  "Para verificar a autenticidade deste documento entre em" \
+                                    " https://sig.ifc.edu.br/documentos/ informando seu número: " \
+                                    "161, ano: 2021, tipo: DECLARAÇÃO, data de emissão: 06/11/2021 " \
+                                    "e o código de verificação: d01d22c977"
 
     # Método responsável por criar o certificado.
     def generate_certification(self):
@@ -61,7 +65,12 @@ class Certificate:
         canva.drawImage('images/rafa.png', 400, pos_Y, 150, 80)
         canva.drawImage('images/IFC.png', 240, pos_Y-20, 120, 120)
 
-        Certificate.draw_text(Certificate.convert_date(self.date), position=[600 / 2, 20], size=10)
+        p = 60
+        for sentence in Certificate.split_text(self.text_authentication, 95):
+            Certificate.draw_text(sentence, position=[600 / 2, p], size=9)
+            p -= 10
+
+        Certificate.draw_text(Certificate.convert_date(self.date), position=[600 / 2, 20], size=12)
 
     @staticmethod
     # Recebe uma string, divide ela a cada determinado numero de caracteres e retorna uma lista com as strings resultantes.
@@ -206,7 +215,6 @@ for i in glob.glob("*input\presence\*"):
 
 generate_amount = 0
 not_generate_amount = 0
-students_passed = []
 
 pastaApp = os.path.dirname(__file__)
 for student in list_students:
@@ -237,10 +245,6 @@ for student in list_students:
         print(
             f"\033[1;31mO aluno(a) {student['First Name'].upper()} {student['Last Name'].upper()} não atingiu frequência suficiente\033[0m\n"
             f"Presença: {percentage_presence[1]}")
-        students_passed.append(f"{student['First Name'].title()} {student['Last Name'].title()}")
         not_generate_amount += 1
 print(f"Gerados: {generate_amount}")
 print(f"Não gerados: {not_generate_amount}")
-
-for s in students_passed:
-    print(s)
