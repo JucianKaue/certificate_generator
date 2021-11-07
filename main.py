@@ -233,12 +233,10 @@ for student in list_students:
         print(f"\033[1;32mO certificado de {student['First Name'].upper()} {student['Last Name'].upper()} foi gerado corretamente\033[0m\n"
               f"Presença: {percentage_presence[1]}")
         generate_amount += 1
-        """ // ------- TO USE THE FUNCTION "send_email" IT'S NECESSARY TO CREATE AN APP PASSWORD ON GOOGLE ACCOUNT
-        print(student["Email Address"])
-        send_email(mail_from=['<--EMAIL ADDRESS-->', 'APP PASSWORD'],
-                   mail_to='<-- STUDENT EMAIL-->',
+
+        send_email(mail_from=['canal.top.arduino@gmail.com', 'zpmhbmumxrzdfsud'],
+                   mail_to=f'{student["Email Address"].lower()}',
                    certificate_name=f"certificado-{student['First Name']} {student['Last Name']}.pdf")
-        """
 
     else:
         # Mostra uma mensagem avisando que o aluno não obteve frequências suficientes
